@@ -1,0 +1,1031 @@
+# rendered by v3.22.0 on 2026-10-13T21:14:35Z
+# command: helm template tenantly charts/tenantly --namespace tenantly -f charts/tenantly/values-demo.yaml
+---
+# Source: tenantly/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: api
+---
+# Source: tenantly/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+# The API never calls the Kubernetes API, so do not mount a token.
+automountServiceAccountToken: false
+---
+# Source: tenantly/templates/secret.yaml
+# Dev only. Values come from values.yaml placeholders. Use secrets.mode sealed for anything real.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tenantly-secrets
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://tenantly_app:change-me-app-db@tenantly-postgres:5432/tenantly?sslmode=disable"
+  MIGRATE_DATABASE_URL: "postgres://postgres:change-me-postgres@tenantly-postgres:5432/tenantly?sslmode=disable"
+  JWT_SECRET: "change-me-jwt-secret"
+  OAUTH_CLIENT_SECRET: "change-me-oauth-client-secret"
+  POSTGRES_PASSWORD: "change-me-postgres"
+  APP_DB_PASSWORD: "change-me-app-db"
+---
+# Source: tenantly/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenantly-config
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+data:
+---
+# Source: tenantly/templates/dashboards-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenantly-dashboards
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    # The Grafana sidecar loads ConfigMaps that carry this label.
+    grafana_dashboard: "1"
+  annotations:
+    # The Grafana sidecar places the dashboards in this folder.
+    grafana_folder: "Kubestack"
+data:
+
+  tenantly-autoscaling.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "description": "HPA replicas and bounds, CPU use against requests, and the RPS input the HPA scales on.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "HPA current vs desired replicas",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "current {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "desired {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "HPA min and max replicas",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "min {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "max {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "CPU usage per pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\"}[1m]))",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "CPU request per pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=\"$namespace\",resource=\"cpu\",container!=\"\"})",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "RPS (HPA input)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m]))",
+              "legendFormat": "RPS",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "RPS per ready pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m])) / sum(kube_deployment_status_replicas_ready{namespace=\"$namespace\"})",
+              "legendFormat": "RPS per pod",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": [
+        "kubestack"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "label": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false
+          },
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "definition": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "tenantly",
+              "value": "tenantly"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1
+          }
+        ]
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Kubestack: Tenantly autoscaling",
+      "uid": "kubestack-autoscaling",
+      "version": 1,
+      "weekInterval": ""
+    }
+  tenantly-overview.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "description": "Edge traffic from Traefik and pod health for the Tenantly API.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Requests/s by status code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (code) (rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m]))",
+              "legendFormat": "{{code}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "p95 latency",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"$namespace-.*\"}[5m])))",
+              "legendFormat": "p95",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "5xx error ratio",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\",code=~\"5..\"}[5m])) / sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[5m]))",
+              "legendFormat": "5xx ratio",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Ready pods",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(kube_deployment_status_replicas_ready{namespace=\"$namespace\"})",
+              "legendFormat": "ready",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Container restarts (10m)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[10m]))",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Pod phase over time",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"$namespace\"})",
+              "legendFormat": "{{phase}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": [
+        "kubestack"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "label": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false
+          },
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "definition": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "tenantly",
+              "value": "tenantly"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1
+          }
+        ]
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Kubestack: Tenantly overview",
+      "uid": "kubestack-overview",
+      "version": 1,
+      "weekInterval": ""
+    }
+---
+# Source: tenantly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/component: api
+---
+# Source: tenantly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    # Lets scripts/chaos.sh find the API Deployment by label, as it already does for the pods.
+    app.kubernetes.io/component: api
+  annotations:
+    # Sync after postgres and redis (wave 0) and after the migrate Job (wave 1).
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      annotations:
+        # Changing the ConfigMap changes this hash, which rolls the pods.
+        checksum/config: 385606f7e8fd48080281b0b4d95dd10d0bcd2866539adbd06a9dfe0516e6559e
+      labels:
+        helm.sh/chart: tenantly-0.1.0
+        app.kubernetes.io/name: tenantly
+        app.kubernetes.io/instance: tenantly
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: kubestack
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: tenantly
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tenantly
+              app.kubernetes.io/instance: tenantly
+              app.kubernetes.io/component: api
+      containers:
+        - name: api
+          image: "ghcr.io/stefanprodan/podinfo:6.7.0"
+          imagePullPolicy: IfNotPresent
+          command:
+            - ./podinfo
+            - --port=9898
+          ports:
+            - name: http
+              containerPort: 9898
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tenantly-config
+            - secretRef:
+                name: tenantly-secrets
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            # The root filesystem is read-only, so /tmp is a writable emptyDir.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+# Source: tenantly/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tenantly
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    # CPU utilization, measured against the container CPU request (metrics-server).
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Requests per second per pod, from prometheus-adapter (external metric).
+    - type: External
+      external:
+        metric:
+          name: tenantly_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "20"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 30
+---
+# Source: tenantly/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  ingressClassName: traefik
+  rules:
+    # An empty host means the rule matches every host.
+    - 
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tenantly
+                port:
+                  name: http
+---
+# Source: tenantly/templates/servicemonitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    # Prometheus from kube-prometheus-stack selects ServiceMonitors with this release label.
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

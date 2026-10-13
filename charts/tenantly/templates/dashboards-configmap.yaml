@@ -1,0 +1,15 @@
+{{- if .Values.dashboards.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tenantly.fullname" . }}-dashboards
+  labels:
+    {{- include "tenantly.labels" . | nindent 4 }}
+    # The Grafana sidecar loads ConfigMaps that carry this label.
+    {{ .Values.dashboards.label }}: {{ .Values.dashboards.labelValue | quote }}
+  annotations:
+    # The Grafana sidecar places the dashboards in this folder.
+    grafana_folder: {{ .Values.dashboards.folder | quote }}
+data:
+{{ (.Files.Glob "dashboards/*.json").AsConfig | nindent 2 }}
+{{- end }}

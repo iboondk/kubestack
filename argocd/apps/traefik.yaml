@@ -1,0 +1,38 @@
+# Traefik is the ingress controller and the source of the edge request metric. Wave -1.
+# It is the default IngressClass, and it runs as a NodePort on 30080 (see kind/cluster.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: "41.7.1"
+      helm:
+        valueFiles:
+          - $values/platform/traefik-values.yaml
+    - repoURL: https://github.com/iboondk/kubestack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

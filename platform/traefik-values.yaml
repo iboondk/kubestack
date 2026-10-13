@@ -1,0 +1,36 @@
+# Values for the traefik chart (see argocd/apps/traefik.yaml).
+service:
+  # kind forwards host ports to NodePorts, so the HTTP entry point is exposed as a NodePort.
+  # traefik chart 41.x reads the Service type from service.spec.type (its default is LoadBalancer).
+  spec:
+    type: NodePort
+
+ports:
+  web:
+    # Matches the extraPortMappings entry for 30080 in kind/cluster.yaml.
+    nodePort: 30080
+
+metrics:
+  prometheus:
+    # Traefik exposes its metrics, including traefik_service_requests_total, for Prometheus.
+    # Dedicated ClusterIP Service on port 9100 (component: metrics). The main traefik Service does not
+    # expose the metrics port, so the ServiceMonitor needs this one to find a target.
+    service:
+      enabled: true
+    serviceMonitor:
+      enabled: true
+      # kube-prometheus-stack selects ServiceMonitors by this release label.
+      additionalLabels:
+        release: kube-prometheus-stack
+    # Label each request metric with its backend service. The adapter rule filters on service=~"tenantly-.*".
+    addServicesLabels: true
+
+ingressClass:
+  # Create the IngressClass and make it the cluster default, so the tenantly Ingress needs no extra config.
+  enabled: true
+  isDefaultClass: true
+
+providers:
+  kubernetesIngress:
+    # Read Ingress objects from the cluster.
+    enabled: true

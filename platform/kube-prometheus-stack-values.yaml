@@ -1,0 +1,52 @@
+# Values for kube-prometheus-stack (see argocd/apps/kube-prometheus-stack.yaml).
+# Everything here is a dev setting for a local kind cluster.
+
+alertmanager:
+  # No alerting in the local demo.
+  enabled: false
+
+# kind does not expose these control-plane components, so their scrape targets would stay down.
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+
+grafana:
+  service:
+    # Reached from the host through kind's extraPortMappings (127.0.0.1:30300).
+    type: NodePort
+    nodePort: 30300
+  # adminPassword is deliberately left at the chart default. The real value is
+  # GRAFANA_ADMIN_PASSWORD in your local .env (see .env.example). Never commit a real password.
+  sidecar:
+    dashboards:
+      # Load ConfigMaps that carry the label below. The tenantly chart ships its dashboards that way.
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      # Watch every namespace, because the dashboard ConfigMaps live in the tenantly namespace.
+      searchNamespace: ALL
+      # Read the folder name from this annotation on the ConfigMap.
+      folderAnnotation: grafana_folder
+      provider:
+        # Mirror the folder layout of the ConfigMap into Grafana folders.
+        foldersFromFilesStructure: true
+
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30090
+  prometheusSpec:
+    # Pick up ServiceMonitors and PodMonitors from any namespace, not only the ones the chart labels.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    # Keep only one day of data in the local demo.
+    retention: 1d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi

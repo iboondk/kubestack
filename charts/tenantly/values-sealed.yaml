@@ -1,0 +1,23 @@
+# Overlay that reads secrets from a SealedSecret. The encrypted values below are
+# placeholders. Run scripts/seal-secrets.sh to replace them with ciphertext for your cluster.
+# Order matters: run `make seal`, then commit and push this file, BEFORE the tenantly app syncs
+# (`make bootstrap`). Until then the SealedSecret cannot decrypt and tenantly-secrets is never created.
+secrets:
+  # sealed: render a SealedSecret instead of a plain Secret.
+  mode: sealed
+
+sealedSecrets:
+  # Placeholder ciphertext for each secret key. Not valid until sealed.
+  encryptedData:
+    # Placeholder for DATABASE_URL.
+    DATABASE_URL: AgPLACEHOLDER-run-scripts-seal-secrets.sh
+    # Placeholder for MIGRATE_DATABASE_URL.
+    MIGRATE_DATABASE_URL: AgPLACEHOLDER-run-scripts-seal-secrets.sh
+    # Placeholder for JWT_SECRET.
+    JWT_SECRET: AgPLACEHOLDER-run-scripts-seal-secrets.sh
+    # Placeholder for OAUTH_CLIENT_SECRET.
+    OAUTH_CLIENT_SECRET: AgPLACEHOLDER-run-scripts-seal-secrets.sh
+    # Placeholder for POSTGRES_PASSWORD.
+    POSTGRES_PASSWORD: AgPLACEHOLDER-run-scripts-seal-secrets.sh
+    # Placeholder for APP_DB_PASSWORD.
+    APP_DB_PASSWORD: AgPLACEHOLDER-run-scripts-seal-secrets.sh

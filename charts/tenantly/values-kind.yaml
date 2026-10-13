@@ -1,0 +1,13 @@
+# Overlay for the local kind cluster. The image is built by build-image.sh and
+# loaded with kind load, so it is never pulled from a registry.
+image:
+  # Locally built image name.
+  repository: tenantly-api
+  # Locally built image tag.
+  tag: dev
+  # Never pull: the image exists only on the kind nodes.
+  pullPolicy: Never
+
+secrets:
+  # Use the dev placeholder values from values.yaml. Never real credentials.
+  mode: plain

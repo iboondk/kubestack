@@ -1,0 +1,8 @@
+# kubeconform output
+# date (UTC): 2026-10-13T21:14:35Z
+# version: v0.8.0
+# inputs: proof/helm-template-default.yaml proof/helm-template-demo.yaml proof/helm-template-kind.yaml argocd/root-app.yaml argocd/apps/kube-prometheus-stack.yaml argocd/apps/metrics-server.yaml argocd/apps/prometheus-adapter.yaml argocd/apps/sealed-secrets.yaml argocd/apps/tenantly.yaml argocd/apps/traefik.yaml
+
+$ kubeconform -summary -output text -ignore-missing-schemas -strict -cache .tools/kubeconform-cache -kubernetes-version 1.36.0 proof/helm-template-default.yaml proof/helm-template-demo.yaml proof/helm-template-kind.yaml argocd/root-app.yaml argocd/apps/kube-prometheus-stack.yaml argocd/apps/metrics-server.yaml argocd/apps/prometheus-adapter.yaml argocd/apps/sealed-secrets.yaml argocd/apps/tenantly.yaml argocd/apps/traefik.yaml
+Summary: 45 resources found in 10 files - Valid: 37, Invalid: 0, Errors: 0, Skipped: 8
+[exit 0] kubeconform k8s 1.36.0

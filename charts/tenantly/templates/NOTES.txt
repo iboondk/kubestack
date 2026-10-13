@@ -1,0 +1,18 @@
+Tenantly is installed as release "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+
+Image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+Secrets mode: {{ .Values.secrets.mode }}
+
+Reach the API on the kind cluster. The kind config maps host port 30080 to the
+Traefik NodePort, so the API answers at:
+
+  http://localhost:30080/healthz
+
+Check the rollout:
+
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "tenantly.fullname" . }}
+{{- if and .Values.migrate.enabled .Values.postgres.enabled }}
+  kubectl -n {{ .Release.Namespace }} logs job/{{ include "tenantly.fullname" . }}-migrate -c migrate
+{{- end }}
+
+Dev placeholders are in use when secrets.mode is "plain". Do not use them outside a dev cluster.

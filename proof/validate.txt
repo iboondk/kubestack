@@ -1,0 +1,38 @@
+PASS yaml parses argocd/apps/kube-prometheus-stack.yaml
+PASS yaml parses argocd/apps/metrics-server.yaml
+PASS yaml parses argocd/apps/prometheus-adapter.yaml
+PASS yaml parses argocd/apps/sealed-secrets.yaml
+PASS yaml parses argocd/apps/tenantly.yaml
+PASS yaml parses argocd/apps/traefik.yaml
+PASS yaml parses argocd/bootstrap/argocd-cm-patch.yaml
+PASS yaml parses argocd/root-app.yaml
+PASS yaml parses charts/tenantly/values-demo.yaml
+PASS yaml parses charts/tenantly/values-kind.yaml
+PASS yaml parses charts/tenantly/values-sealed.yaml
+PASS yaml parses charts/tenantly/values.yaml
+PASS yaml parses kind/cluster.yaml
+PASS yaml parses platform/kube-prometheus-stack-values.yaml
+PASS yaml parses platform/metrics-server-values.yaml
+PASS yaml parses platform/prometheus-adapter-values.yaml
+PASS yaml parses platform/traefik-values.yaml
+PASS dashboard json charts/tenantly/dashboards/tenantly-autoscaling.json
+PASS dashboard json charts/tenantly/dashboards/tenantly-overview.json
+PASS dashboards_schema charts/tenantly/dashboards/tenantly-autoscaling.json
+PASS dashboards_schema charts/tenantly/dashboards/tenantly-overview.json
+PASS bash -n scripts/bootstrap-argocd.sh
+PASS bash -n scripts/build-image.sh
+PASS bash -n scripts/chaos.sh
+PASS bash -n scripts/cluster-down.sh
+PASS bash -n scripts/cluster-up.sh
+PASS bash -n scripts/lib.sh
+PASS bash -n scripts/lint.sh
+PASS bash -n scripts/load.sh
+PASS bash -n scripts/seal-secrets.sh
+PASS bash -n scripts/tools.sh
+PASS versions.env keys
+PASS versions.env pins
+PASS .env.example placeholders
+PASS no AI attribution
+PASS no internal project codes
+PASS argocd_apps (6 apps checked)
+37 passed, 0 failed

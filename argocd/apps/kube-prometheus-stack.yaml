@@ -1,0 +1,40 @@
+# Prometheus Operator, Prometheus, Grafana and kube-state-metrics. Wave -2.
+# ServerSideApply is needed because the Prometheus CRDs are too large for client-side apply.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: "92.3.0"
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $values/platform/kube-prometheus-stack-values.yaml
+    - repoURL: https://github.com/iboondk/kubestack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

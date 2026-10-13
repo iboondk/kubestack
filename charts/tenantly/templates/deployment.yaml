@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tenantly.fullname" . }}
+  labels:
+    {{- include "tenantly.labels" . | nindent 4 }}
+    # Lets scripts/chaos.sh find the API Deployment by label, as it already does for the pods.
+    app.kubernetes.io/component: api
+  annotations:
+    # Sync after postgres and redis (wave 0) and after the migrate Job (wave 1).
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  {{- if not .Values.hpa.enabled }}
+  # Omitted when the HPA is on, so the HPA owns the replica count.
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "tenantly.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      annotations:
+        # Changing the ConfigMap changes this hash, which rolls the pods.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+      labels:
+        {{- include "tenantly.labels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+    spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ default (include "tenantly.fullname" .) .Values.serviceAccount.name }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.topologySpread }}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "tenantly.selectorLabels" . | nindent 14 }}
+              app.kubernetes.io/component: api
+      {{- end }}
+      containers:
+        - name: api
+          image: {{ printf "%s:%s" .Values.image.repository (toString .Values.image.tag) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.api.command | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "tenantly.fullname" . }}-config
+            - secretRef:
+                name: {{ include "tenantly.secretName" . }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.path }}
+              port: http
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            # The root filesystem is read-only, so /tmp is a writable emptyDir.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

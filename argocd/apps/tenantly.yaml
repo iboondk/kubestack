@@ -1,0 +1,38 @@
+# The workload: the tenantly chart from this repo. Wave 0, after the platform waves.
+# Postgres, Redis, the migrate hook (wave 1) and the API (wave 2) are ordered inside the chart.
+# values-sealed.yaml supplies the encrypted secrets (see scripts/seal-secrets.sh).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tenantly
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/iboondk/kubestack.git
+    targetRevision: main
+    path: charts/tenantly
+    helm:
+      valueFiles:
+        - values-kind.yaml
+        - values-sealed.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tenantly
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

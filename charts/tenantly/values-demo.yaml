@@ -1,0 +1,55 @@
+# Overlay that runs podinfo instead of Tenantly. Use it until the Tenantly API source is available.
+# The image tag comes from PODINFO_IMAGE in versions.env.
+image:
+  # podinfo image repository.
+  repository: ghcr.io/stefanprodan/podinfo
+  # podinfo image tag (pinned, matches PODINFO_IMAGE in versions.env).
+  tag: "6.7.0"
+  # Pull from the registry if the image is not already on the node.
+  pullPolicy: IfNotPresent
+
+# podinfo listens on 9898, not 8080.
+containerPort: 9898
+
+api:
+  # podinfo binary and its listen port.
+  command: ["./podinfo", "--port=9898"]
+
+migrate:
+  # No migrations for podinfo.
+  enabled: false
+
+postgres:
+  # No database for podinfo.
+  enabled: false
+
+redis:
+  # No cache for podinfo.
+  enabled: false
+
+env:
+  # Null removes the default Tenantly variables from the rendered ConfigMap (Helm
+  # merges maps, so an empty map would keep the defaults). podinfo needs none of them.
+  APP_ENV: null
+  HTTP_ADDR: null
+  REDIS_URL: null
+  OTEL_EXPORTER: null
+
+# The chart's Secret still renders with dev placeholders, so the Deployment envFrom works.
+secrets:
+  mode: plain
+
+# podinfo's default health path is /healthz.
+probes:
+  liveness:
+    # podinfo serves /healthz.
+    path: /healthz
+  readiness:
+    # podinfo serves /healthz.
+    path: /healthz
+
+metrics:
+  # podinfo exposes Prometheus metrics on /metrics, so the ServiceMonitor is rendered.
+  enabled: true
+  # podinfo serves /metrics on its main port (9898), which the Service names http.
+  path: /metrics

@@ -1,0 +1,46 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "tenantly.fullname" . }}
+  labels:
+    {{- include "tenantly.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "tenantly.fullname" . }}
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics:
+    # CPU utilization, measured against the container CPU request (metrics-server).
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.hpa.cpuAverageUtilization }}
+    {{- if .Values.hpa.rps.enabled }}
+    # Requests per second per pod, from prometheus-adapter (external metric).
+    - type: External
+      external:
+        metric:
+          name: {{ .Values.hpa.rps.metricName }}
+        target:
+          type: AverageValue
+          averageValue: {{ .Values.hpa.rps.averageValue | quote }}
+    {{- end }}
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: {{ .Values.hpa.behavior.scaleUp.stabilizationWindowSeconds }}
+      policies:
+        - type: {{ .Values.hpa.behavior.scaleUp.policyType }}
+          value: {{ .Values.hpa.behavior.scaleUp.value }}
+          periodSeconds: {{ .Values.hpa.behavior.scaleUp.periodSeconds }}
+    scaleDown:
+      stabilizationWindowSeconds: {{ .Values.hpa.behavior.scaleDown.stabilizationWindowSeconds }}
+      policies:
+        - type: {{ .Values.hpa.behavior.scaleDown.policyType }}
+          value: {{ .Values.hpa.behavior.scaleDown.value }}
+          periodSeconds: {{ .Values.hpa.behavior.scaleDown.periodSeconds }}
+{{- end }}

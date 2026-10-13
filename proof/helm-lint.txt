@@ -1,0 +1,31 @@
+# helm lint output
+# date (UTC): 2026-10-13T21:14:35Z
+# helm version: v3.22.0
+
+$ .tools/bin/helm lint charts/tenantly
+==> Linting charts/tenantly
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+[exit 0] helm lint (no values file)
+
+$ .tools/bin/helm lint charts/tenantly -f charts/tenantly/values-kind.yaml
+==> Linting charts/tenantly
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+[exit 0] helm lint -f charts/tenantly/values-kind.yaml
+
+$ .tools/bin/helm lint charts/tenantly -f charts/tenantly/values-demo.yaml
+==> Linting charts/tenantly
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+[exit 0] helm lint -f charts/tenantly/values-demo.yaml
+
+$ .tools/bin/helm lint charts/tenantly -f charts/tenantly/values-sealed.yaml
+==> Linting charts/tenantly
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+[exit 0] helm lint -f charts/tenantly/values-sealed.yaml

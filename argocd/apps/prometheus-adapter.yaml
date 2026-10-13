@@ -1,0 +1,38 @@
+# prometheus-adapter exposes tenantly_requests_per_second as an External metric for the HPA. Wave -1.
+# Its rule name must equal hpa.rps.metricName in charts/tenantly/values.yaml (checked by tests/test_argocd.py).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus-adapter
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-adapter
+      targetRevision: "5.3.0"
+      helm:
+        valueFiles:
+          - $values/platform/prometheus-adapter-values.yaml
+    - repoURL: https://github.com/iboondk/kubestack.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

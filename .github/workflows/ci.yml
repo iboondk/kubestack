@@ -1,0 +1,90 @@
+# CI for kubestack. Runs on every push and pull request. Needs no cluster and no secrets.
+# The pinned versions come from versions.env, the same file the local scripts read.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Unit tests and validator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install PyYAML (pinned)
+        run: python3 -m pip install "PyYAML==6.0.3"
+
+      - name: Check bash syntax of every script
+        run: |
+          for f in scripts/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Offline validator
+        run: make validate
+
+      - name: Unit tests (chart render tests skip when helm is absent)
+        run: make test
+
+  chart:
+    name: Helm lint and template
+    runs-on: ubuntu-latest
+    needs: offline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install PyYAML (pinned)
+        run: python3 -m pip install "PyYAML==6.0.3"
+
+      - name: Build helm, stamped the same way as scripts/tools.sh
+        run: |
+          set -euo pipefail
+          set -a
+          . ./versions.env
+          set +a
+          K8S_MINOR="$(sed -nE 's#^kindest/node:v1\.([0-9]+)\..*#\1#p' <<< "$KIND_NODE_IMAGE")"
+          mkdir -p .tools/bin
+          GOBIN="$GITHUB_WORKSPACE/.tools/bin" go install \
+            -ldflags "-X helm.sh/helm/v3/internal/version.version=$HELM_VERSION -X helm.sh/helm/v3/pkg/chartutil.k8sVersionMajor=1 -X helm.sh/helm/v3/pkg/chartutil.k8sVersionMinor=$K8S_MINOR -X helm.sh/helm/v3/pkg/lint/rules.k8sVersionMajor=1 -X helm.sh/helm/v3/pkg/lint/rules.k8sVersionMinor=$K8S_MINOR" \
+            "helm.sh/helm/v3/cmd/helm@$HELM_VERSION"
+          .tools/bin/helm version --short
+
+      - name: helm lint (four value sets)
+        run: |
+          set -euo pipefail
+          H=.tools/bin/helm
+          C=charts/tenantly
+          $H lint "$C"
+          $H lint "$C" -f "$C/values-kind.yaml"
+          $H lint "$C" -f "$C/values-demo.yaml"
+          $H lint "$C" -f "$C/values-sealed.yaml"
+
+      - name: helm template (three value sets)
+        run: |
+          set -euo pipefail
+          H=.tools/bin/helm
+          C=charts/tenantly
+          $H template tenantly "$C" --namespace tenantly >/dev/null
+          $H template tenantly "$C" --namespace tenantly -f "$C/values-kind.yaml" >/dev/null
+          $H template tenantly "$C" --namespace tenantly -f "$C/values-demo.yaml" >/dev/null
+
+      - name: Unit tests with the built helm (render tests run)
+        run: make test

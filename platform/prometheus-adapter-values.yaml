@@ -1,0 +1,19 @@
+# Values for prometheus-adapter (see argocd/apps/prometheus-adapter.yaml).
+# The one external rule turns Traefik's request counter into the External metric
+# tenantly_requests_per_second, which the tenantly HPA reads (hpa.rps.metricName).
+prometheus:
+  # Service of the kube-prometheus-stack Prometheus (release name kube-prometheus-stack).
+  url: http://kube-prometheus-stack-prometheus.monitoring.svc
+  port: 9090
+
+rules:
+  # Drop the default rules, which target resource metrics that metrics-server already serves.
+  default: false
+  external:
+    - seriesQuery: 'traefik_service_requests_total'
+      resources:
+        # Cluster-scoped metric, so the HPA can read it without a namespace.
+        namespaced: false
+      name:
+        as: tenantly_requests_per_second
+      metricsQuery: 'sum(rate(traefik_service_requests_total{service=~"tenantly-.*"}[1m]))'

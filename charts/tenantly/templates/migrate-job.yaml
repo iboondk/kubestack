@@ -1,0 +1,93 @@
+{{- if and .Values.migrate.enabled .Values.postgres.enabled }}
+# Runs the schema migrations, then sets the tenantly_app login password.
+# Argo CD runs it as a Sync hook at wave 1, after postgres (wave 0) and before the API (wave 2).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "tenantly.fullname" . }}-migrate
+  labels:
+    {{- include "tenantly.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        {{- include "tenantly.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ default (include "tenantly.fullname" .) .Values.serviceAccount.name }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        # 1. Wait until Postgres accepts connections.
+        - name: wait-for-db
+          image: {{ .Values.postgres.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - until pg_isready -h {{ .Release.Name }}-postgres -p 5432 -U postgres; do echo "waiting for postgres"; sleep 2; done
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+        # 2. Apply the schema migrations with the app image.
+        - name: migrate
+          image: {{ printf "%s:%s" .Values.image.repository (toString .Values.image.tag) | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            {{- toYaml .Values.migrate.command | nindent 12 }}
+          env:
+            - name: MIGRATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tenantly.secretName" . }}
+                  key: MIGRATE_DATABASE_URL
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        # Main container: grant LOGIN to tenantly_app. Migration 00001 creates the role as NOLOGIN.
+        - name: set-app-role-password
+          image: {{ .Values.postgres.image | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              psql "$MIGRATE_DATABASE_URL" -v ON_ERROR_STOP=1 -v pw="$APP_DB_PASSWORD" <<'SQL'
+              ALTER ROLE tenantly_app LOGIN PASSWORD :'pw';
+              SQL
+          env:
+            - name: MIGRATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tenantly.secretName" . }}
+                  key: MIGRATE_DATABASE_URL
+            - name: APP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "tenantly.secretName" . }}
+                  key: APP_DB_PASSWORD
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

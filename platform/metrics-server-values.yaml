@@ -1,0 +1,4 @@
+# Values for the metrics-server chart (see argocd/apps/metrics-server.yaml).
+# kind kubelets serve self-signed certificates, so the scraper must skip TLS verification.
+args:
+  - --kubelet-insecure-tls

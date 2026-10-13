@@ -1,0 +1,1344 @@
+# rendered by v3.22.0 on 2026-10-13T21:14:35Z
+# command: helm template tenantly charts/tenantly --namespace tenantly 
+---
+# Source: tenantly/templates/pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: api
+---
+# Source: tenantly/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+# The API never calls the Kubernetes API, so do not mount a token.
+automountServiceAccountToken: false
+---
+# Source: tenantly/templates/secret.yaml
+# Dev only. Values come from values.yaml placeholders. Use secrets.mode sealed for anything real.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tenantly-secrets
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+type: Opaque
+stringData:
+  DATABASE_URL: "postgres://tenantly_app:change-me-app-db@tenantly-postgres:5432/tenantly?sslmode=disable"
+  MIGRATE_DATABASE_URL: "postgres://postgres:change-me-postgres@tenantly-postgres:5432/tenantly?sslmode=disable"
+  JWT_SECRET: "change-me-jwt-secret"
+  OAUTH_CLIENT_SECRET: "change-me-oauth-client-secret"
+  POSTGRES_PASSWORD: "change-me-postgres"
+  APP_DB_PASSWORD: "change-me-app-db"
+---
+# Source: tenantly/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenantly-config
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+data:
+  # Values pass through tpl, so {{ .Release.Name }} resolves in REDIS_URL.
+  APP_ENV: "dev"
+  HTTP_ADDR: ":8080"
+  OTEL_EXPORTER: "stdout"
+  REDIS_URL: "redis://tenantly-redis:6379/0"
+---
+# Source: tenantly/templates/dashboards-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenantly-dashboards
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    # The Grafana sidecar loads ConfigMaps that carry this label.
+    grafana_dashboard: "1"
+  annotations:
+    # The Grafana sidecar places the dashboards in this folder.
+    grafana_folder: "Kubestack"
+data:
+
+  tenantly-autoscaling.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "description": "HPA replicas and bounds, CPU use against requests, and the RPS input the HPA scales on.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "HPA current vs desired replicas",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "current {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "desired {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "HPA min and max replicas",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "min {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"$namespace\"}",
+              "legendFormat": "max {{horizontalpodautoscaler}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "CPU usage per pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\"}[1m]))",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "CPU request per pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (kube_pod_container_resource_requests{namespace=\"$namespace\",resource=\"cpu\",container!=\"\"})",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "RPS (HPA input)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m]))",
+              "legendFormat": "RPS",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "RPS per ready pod",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m])) / sum(kube_deployment_status_replicas_ready{namespace=\"$namespace\"})",
+              "legendFormat": "RPS per pod",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": [
+        "kubestack"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "label": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false
+          },
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "definition": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "tenantly",
+              "value": "tenantly"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1
+          }
+        ]
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Kubestack: Tenantly autoscaling",
+      "uid": "kubestack-autoscaling",
+      "version": 1,
+      "weekInterval": ""
+    }
+  tenantly-overview.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "description": "Edge traffic from Traefik and pod health for the Tenantly API.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Requests/s by status code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (code) (rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[1m]))",
+              "legendFormat": "{{code}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "p95 latency",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.95, sum by (le) (rate(traefik_service_request_duration_seconds_bucket{service=~\"$namespace-.*\"}[5m])))",
+              "legendFormat": "p95",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "5xx error ratio",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\",code=~\"5..\"}[5m])) / sum(rate(traefik_service_requests_total{service=~\"$namespace-.*\"}[5m]))",
+              "legendFormat": "5xx ratio",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Ready pods",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(kube_deployment_status_replicas_ready{namespace=\"$namespace\"})",
+              "legendFormat": "ready",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "area",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Container restarts (10m)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 8
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[10m]))",
+              "legendFormat": "{{pod}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Pod phase over time",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"$namespace\"})",
+              "legendFormat": "{{phase}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "description": "",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": [
+        "kubestack"
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "label": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "current": {},
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false
+          },
+          {
+            "name": "namespace",
+            "label": "Namespace",
+            "type": "query",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "query": "label_values(kube_pod_info, namespace)",
+            "definition": "label_values(kube_pod_info, namespace)",
+            "current": {
+              "text": "tenantly",
+              "value": "tenantly"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "multi": false,
+            "options": [],
+            "refresh": 2,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1
+          }
+        ]
+      },
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Kubestack: Tenantly overview",
+      "uid": "kubestack-overview",
+      "version": 1,
+      "weekInterval": ""
+    }
+---
+# Source: tenantly/templates/postgres.yaml
+# Dev-only Postgres. Data lives in a PVC. Replace with a managed database for anything real.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenantly-postgres
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  # Headless, as required by the StatefulSet. DNS resolves to the single pod.
+  clusterIP: None
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/component: postgres
+---
+# Source: tenantly/templates/redis.yaml
+# Dev-only Redis. No persistence, so it needs no volume.
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenantly-redis
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: redis
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  type: ClusterIP
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/component: redis
+---
+# Source: tenantly/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/component: api
+---
+# Source: tenantly/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    # Lets scripts/chaos.sh find the API Deployment by label, as it already does for the pods.
+    app.kubernetes.io/component: api
+  annotations:
+    # Sync after postgres and redis (wave 0) and after the migrate Job (wave 1).
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      annotations:
+        # Changing the ConfigMap changes this hash, which rolls the pods.
+        checksum/config: 9f8085c08a167e5751f1fcf585c2aed046022e5d1c6fb797bcd5bef766d840a6
+      labels:
+        helm.sh/chart: tenantly-0.1.0
+        app.kubernetes.io/name: tenantly
+        app.kubernetes.io/instance: tenantly
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: kubestack
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: tenantly
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: tenantly
+              app.kubernetes.io/instance: tenantly
+              app.kubernetes.io/component: api
+      containers:
+        - name: api
+          image: "tenantly-api:dev"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /app/api
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: tenantly-config
+            - secretRef:
+                name: tenantly-secrets
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            # The root filesystem is read-only, so /tmp is a writable emptyDir.
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+# Source: tenantly/templates/redis.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenantly-redis
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: redis
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: tenantly-0.1.0
+        app.kubernetes.io/name: tenantly
+        app.kubernetes.io/instance: tenantly
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: kubestack
+        app.kubernetes.io/component: redis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # UID 999 is the redis user in the official image.
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: redis
+          image: "redis:7-alpine"
+          imagePullPolicy: IfNotPresent
+          # Disable RDB snapshots and AOF, since this instance is dev-only.
+          args: ["--save", "", "--appendonly", "no"]
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command: ["redis-cli", "ping"]
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+---
+# Source: tenantly/templates/hpa.yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tenantly
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    # CPU utilization, measured against the container CPU request (metrics-server).
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Requests per second per pod, from prometheus-adapter (external metric).
+    - type: External
+      external:
+        metric:
+          name: tenantly_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "20"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 30
+---
+# Source: tenantly/templates/postgres.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tenantly-postgres
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  serviceName: tenantly-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenantly
+      app.kubernetes.io/instance: tenantly
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: tenantly-0.1.0
+        app.kubernetes.io/name: tenantly
+        app.kubernetes.io/instance: tenantly
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: kubestack
+        app.kubernetes.io/component: postgres
+    spec:
+      securityContext:
+        # UID 70 is the postgres user in the alpine image. Running non-root avoids the root entrypoint.
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+      containers:
+        - name: postgres
+          image: "postgres:16-alpine"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_DB
+              value: tenantly
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tenantly-secrets
+                  key: POSTGRES_PASSWORD
+            # A subdirectory of the PVC avoids the lost+found directory that initdb rejects.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-d", "tenantly"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          helm.sh/chart: tenantly-0.1.0
+          app.kubernetes.io/name: tenantly
+          app.kubernetes.io/instance: tenantly
+          app.kubernetes.io/version: "0.1.0"
+          app.kubernetes.io/managed-by: Helm
+          app.kubernetes.io/part-of: kubestack
+          app.kubernetes.io/component: postgres
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: "1Gi"
+---
+# Source: tenantly/templates/migrate-job.yaml
+# Runs the schema migrations, then sets the tenantly_app login password.
+# Argo CD runs it as a Sync hook at wave 1, after postgres (wave 0) and before the API (wave 2).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tenantly-migrate
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+    app.kubernetes.io/component: migrate
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: tenantly-0.1.0
+        app.kubernetes.io/name: tenantly
+        app.kubernetes.io/instance: tenantly
+        app.kubernetes.io/version: "0.1.0"
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/part-of: kubestack
+        app.kubernetes.io/component: migrate
+    spec:
+      restartPolicy: Never
+      serviceAccountName: tenantly
+      automountServiceAccountToken: false
+      securityContext:
+        runAsGroup: 65532
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # 1. Wait until Postgres accepts connections.
+        - name: wait-for-db
+          image: "postgres:16-alpine"
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - until pg_isready -h tenantly-postgres -p 5432 -U postgres; do echo "waiting for postgres"; sleep 2; done
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+        # 2. Apply the schema migrations with the app image.
+        - name: migrate
+          image: "tenantly-api:dev"
+          imagePullPolicy: IfNotPresent
+          command:
+            - /app/migrate
+            - up
+          env:
+            - name: MIGRATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tenantly-secrets
+                  key: MIGRATE_DATABASE_URL
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        # Main container: grant LOGIN to tenantly_app. Migration 00001 creates the role as NOLOGIN.
+        - name: set-app-role-password
+          image: "postgres:16-alpine"
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              psql "$MIGRATE_DATABASE_URL" -v ON_ERROR_STOP=1 -v pw="$APP_DB_PASSWORD" <<'SQL'
+              ALTER ROLE tenantly_app LOGIN PASSWORD :'pw';
+              SQL
+          env:
+            - name: MIGRATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: tenantly-secrets
+                  key: MIGRATE_DATABASE_URL
+            - name: APP_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tenantly-secrets
+                  key: APP_DB_PASSWORD
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+# Source: tenantly/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tenantly
+  labels:
+    helm.sh/chart: tenantly-0.1.0
+    app.kubernetes.io/name: tenantly
+    app.kubernetes.io/instance: tenantly
+    app.kubernetes.io/version: "0.1.0"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kubestack
+spec:
+  ingressClassName: traefik
+  rules:
+    # An empty host means the rule matches every host.
+    - 
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tenantly
+                port:
+                  name: http

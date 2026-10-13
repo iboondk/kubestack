@@ -1,0 +1,15 @@
+.env
+.tools/
+kubeconfig*
+*.tmp
+__pycache__/
+proof/chaos/*.tmp
+
+# Dependencies and build output
+node_modules/
+vendor/
+target/
+.terraform/
+*.tfstate
+*.tfstate.*
+.tmp/

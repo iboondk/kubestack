@@ -1,0 +1,25 @@
+# Root of the app-of-apps. Applied once by scripts/bootstrap-argocd.sh. It syncs every
+# Application manifest in argocd/apps/, and those apps sync the platform and the workload.
+# Fork users: run `make repo-url REPO_URL=https://github.com/<you>/<repo>.git` before bootstrap.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kubestack-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/iboondk/kubestack.git
+    targetRevision: main
+    path: argocd/apps
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

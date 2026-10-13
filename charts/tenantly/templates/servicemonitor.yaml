@@ -1,0 +1,19 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "tenantly.fullname" . }}
+  labels:
+    {{- include "tenantly.labels" . | nindent 4 }}
+    # Prometheus from kube-prometheus-stack selects ServiceMonitors with this release label.
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      {{- include "tenantly.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  endpoints:
+    - port: {{ .Values.metrics.port }}
+      path: {{ .Values.metrics.path }}
+      interval: {{ .Values.metrics.interval }}
+{{- end }}
